@@ -14,6 +14,23 @@ describe("effect", () => {
 
         // update
         user.age ++;
-        // expect(count).toBe(24)
+        expect(count).toBe(24)
+    })
+    it("scheduler", () => {
+        let dumny,
+            run;
+        const scheduler = jest.fn(() => {
+            run = runner;
+        })
+        const obj = reactive({x: 1})
+        const runner = effect(() => {
+            dumny = obj.x;
+        }, {scheduler})
+        expect(dumny).toBe(1);
+        expect(scheduler).not.toHaveBeenCalled();
+        obj.x++;
+        expect(scheduler).toHaveBeenCalledTimes(1);
+        run();
+        expect(dumny).toBe(2);
     })
 })
