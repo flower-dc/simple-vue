@@ -1,13 +1,29 @@
 class ReactiveEffect {
-    _fn: Function;
-    constructor(fn_, public scheduler?: () => void ) {
-        this._fn = fn_;
-        this.scheduler = scheduler;
+    public deps: Set<ReactiveEffect>[] = [];
+    private clearable = true;
+    constructor(
+            private _fn: () => void, 
+            public scheduler?: () => void,
+            private onStop?: () => void
+        ) {
     }
     run() {
         activeEffect = this;
         this._fn();
     }
+    stop() {
+        if(this.clearable) {
+            cleanupEffects(this);
+            this.onStop && this.onStop();
+            this.clearable = false;
+        }
+    }
+}
+
+const cleanupEffects = (effect: ReactiveEffect) => {
+    effect.deps.forEach(d => {
+        d.delete(effect);
+    })
 }
 
 let activeEffect: ReactiveEffect | null = null;
@@ -20,20 +36,21 @@ export const track = (target, key) => {
         depsMap = new Map();
         targetMap.set(target, depsMap);
     }
-    let dep = depsMap.get(key);
+    let dep:Set<ReactiveEffect> = depsMap.get(key);
     if(!dep) {
         dep = new Set();
         depsMap.set(key, dep);
     }
-    dep.add(activeEffect);
+    dep.add(activeEffect!);
+    activeEffect?.deps.push(dep);
 }
 
 export const trigger = (target, key) => {
     const depsMap = targetMap.get(target);
     if(!depsMap) return;
-    const dep = depsMap.get(key);
-    if(!dep) return;
-    for( const effect of dep) {
+    const dep:Set<ReactiveEffect> = depsMap.get(key);
+    if(!dep || !dep.size) return;
+    for(const effect of dep) {
         if(effect.scheduler) {
             effect.scheduler();
         }else {
@@ -42,11 +59,24 @@ export const trigger = (target, key) => {
     }
 }
 
-export const effect = <T extends Function>(fn: T, options?:{
-    scheduler?: () => void
-}) => {
-    const effectFn = new ReactiveEffect(fn, options?.scheduler);
-    effectFn.run();
-    const runner = effectFn.run.bind(effectFn);
+type EffectRunner = {
+    (): void;
+    effect?: ReactiveEffect;
+}
+
+type effectOptions = {
+    scheduler?: () => void;
+    onStop?: () => void;
+}
+
+export const effect = (fn:() => void, options?:effectOptions) => {
+    const effect = new ReactiveEffect(fn, options?.scheduler, options?.onStop);
+    effect.run();
+    const runner:EffectRunner = effect.run.bind(effect);
+    runner.effect = effect;
     return runner;
+}
+
+export const stop = (runner) => {
+    runner.effect.stop();
 }
