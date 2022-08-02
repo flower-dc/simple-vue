@@ -41,8 +41,7 @@ export const track = <T extends object>(target:T, key:string|symbol) => {
         dep = new Set();
         depsMap.set(key, dep);
     }
-    dep.add(activeEffect!);
-    activeEffect?.deps.push(dep);
+    activeEffect && dep.add(activeEffect) && activeEffect.deps.push(dep);
 }
 
 export const trigger = <T extends object>(target:T, key:string|symbol) => {
