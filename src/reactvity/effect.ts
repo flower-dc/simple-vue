@@ -1,6 +1,8 @@
+let activeEffect: ReactiveEffect | null = null;
+let shouldTrack = true;
 class ReactiveEffect {
     public deps: Set<ReactiveEffect>[] = [];
-    private clearable = true;
+    private active = true;
     constructor(
             private _fn: () => any, 
             public scheduler?: () => any,
@@ -8,14 +10,19 @@ class ReactiveEffect {
         ) {
     }
     run() {
+        if(!this.active) return this._fn();
         activeEffect = this;
-        this._fn();
+        shouldTrack = true;
+        const res = this._fn();
+        shouldTrack = false;
+        return res;
     }
     stop() {
-        if(this.clearable) {
+        if(this.active) {
+            shouldTrack = false;
             cleanup(this);
             this.onStop && this.onStop();
-            this.clearable = false;
+            this.active = false;
         }
     }
 }
@@ -24,13 +31,14 @@ const cleanup = (effect: ReactiveEffect) => {
     effect.deps.forEach(d => {
         d.delete(effect);
     })
+    effect.deps.length = 0;
 }
-
-let activeEffect: ReactiveEffect | null = null;
 
 const targetMap:WeakMap<object, Map<string|symbol, Set<ReactiveEffect>>> = new WeakMap();
 
 export const track = <T extends object>(target:T, key:string|symbol) => {
+    if(!shouldTrack) return;
+    if(!activeEffect) return;
     let depsMap = targetMap.get(target);
     if(!depsMap) {
         depsMap = new Map();
@@ -40,8 +48,7 @@ export const track = <T extends object>(target:T, key:string|symbol) => {
     if(!dep) {
         dep = new Set();
         depsMap.set(key, dep);
-    }
-    activeEffect && dep.add(activeEffect) && activeEffect.deps.push(dep);
+    }dep.add(activeEffect) && activeEffect.deps.push(dep);
 }
 
 export const trigger = <T extends object>(target:T, key:string|symbol) => {

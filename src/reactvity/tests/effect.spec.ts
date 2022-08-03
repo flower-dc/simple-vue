@@ -44,6 +44,10 @@ describe("effect", () => {
         }, { onStop })
         expect(dummy).toBe(1);
         stop(runner);
+        o.x++;
+        expect(dummy).toBe(1);
+        runner();
+        expect(dummy).toBe(2);
         expect(onStop).toBeCalledTimes(1);
     })
 })
