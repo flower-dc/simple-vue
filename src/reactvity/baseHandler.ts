@@ -1,7 +1,18 @@
 import { track, trigger } from "./effect";
 
+export const enum ReactiveFlags {
+    IS_REACTIVE = '__is_Reactive__',
+    IS_READONLY = '__is_Readonly__'
+}
+
 export const createGetter = <T extends Record<string|symbol, any>>(isReadonly = false) => {
     return function(target: T, key:string | symbol) {
+        if(key === ReactiveFlags.IS_REACTIVE) {
+            return !isReadonly;
+        }
+        if(key === ReactiveFlags.IS_READONLY) {
+            return isReadonly;
+        }
         const value = Reflect.get(target,key)
         !isReadonly && track(target, key);
         return value;

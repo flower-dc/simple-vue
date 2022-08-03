@@ -1,4 +1,4 @@
-import { reactive, readonly } from '../reactive'
+import { isReactive, reactive, readonly } from '../reactive'
 describe("reactive", () => {
     it("happy path", () => {
         const origin = {
@@ -8,19 +8,10 @@ describe("reactive", () => {
         expect(origin).not.toBe(proxy);
         expect(proxy.x).toBe(1);
     })
-    it("readonly", () => {
-        const obj = {
-            x:1
-        };
-        const readonlyObj = readonly(obj);
-        expect(readonlyObj.x).toBe(1);
-        expect(obj).not.toBe(readonlyObj)
-    })
-
-    it("can't set readonly property", () => {
-        const obj = readonly({s:1})
-        console.warn = jest.fn()
-        obj.s = 2
-        expect(console.warn).toBeCalled()
+    it("isReactive", () => {
+        const obj = reactive({x:1})
+        expect(isReactive(obj)).toBe(true)
+        const raw = {x:1}
+        expect(isReactive(raw)).toBe(false)
     })
 })
