@@ -1,4 +1,4 @@
-import { isReadonly, readonly } from '../reactive';
+import { isReadonly, readonly, shallowReadonly } from '../reactive';
 describe('readonly', () => {
     it("happy path", () => {
         const obj = {
@@ -21,5 +21,14 @@ describe('readonly', () => {
         expect(isReadonly(obj)).toBe(true)
         const raw = {s:1}
         expect(isReadonly(raw)).toBe(false)
+    })
+
+    it("shallow readonly", () => {
+        const obj = shallowReadonly({
+            x:1,
+            y: {x:1}
+        })
+        expect(isReadonly(obj.y)).toBe(false);
+        expect(isReadonly(obj)).toBe(true)
     })
 })
