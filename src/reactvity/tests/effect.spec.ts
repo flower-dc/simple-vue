@@ -1,4 +1,4 @@
-import { reactive, effect } from '../';
+import { reactive, effect, isReadonly, readonly } from '../';
 import { stop } from '../effect';
 describe("effect", () => {
     it("happy path", () => {
@@ -49,5 +49,24 @@ describe("effect", () => {
         runner();
         expect(dummy).toBe(2);
         expect(onStop).toBeCalledTimes(1);
+    })
+
+    it("nested happy path", () =>{
+        const obj = readonly({
+            count: 0,
+            nested: {
+                count: 0
+            }
+        })
+        const obj1 = reactive({
+            count: 0,
+            nested: {
+                count: 0
+            }
+        })
+        expect(isReadonly(obj)).toBe(true);
+        expect(isReadonly(obj.nested)).toBe(true);
+        expect(isReadonly(obj1)).toBe(false);
+        expect(isReadonly(obj1.nested)).toBe(false);
     })
 })
