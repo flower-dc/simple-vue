@@ -48,7 +48,7 @@ export const track = <T extends object>(target:T, key:string|symbol) => {
         dep = new Set();
         depsMap.set(key, dep);
     }
-    if(!dep.has(activeEffect!)) return;
+    if(dep.has(activeEffect!)) return;
     dep.add(activeEffect!) && activeEffect!.deps.push(dep);
 }
 
