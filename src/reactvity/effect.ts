@@ -37,8 +37,7 @@ const cleanup = (effect: ReactiveEffect) => {
 const targetMap:WeakMap<object, Map<string|symbol, Set<ReactiveEffect>>> = new WeakMap();
 
 export const track = <T extends object>(target:T, key:string|symbol) => {
-    if(!shouldTrack) return;
-    if(!activeEffect) return;
+    if(!canTrack()) return;
     let depsMap = targetMap.get(target);
     if(!depsMap) {
         depsMap = new Map();
@@ -48,7 +47,9 @@ export const track = <T extends object>(target:T, key:string|symbol) => {
     if(!dep) {
         dep = new Set();
         depsMap.set(key, dep);
-    }dep.add(activeEffect) && activeEffect.deps.push(dep);
+    }
+    if(!dep.has(activeEffect!)) return;
+    dep.add(activeEffect!) && activeEffect!.deps.push(dep);
 }
 
 export const trigger = <T extends object>(target:T, key:string|symbol) => {
@@ -64,6 +65,8 @@ export const trigger = <T extends object>(target:T, key:string|symbol) => {
         }
     }
 }
+
+const canTrack = () => !!(activeEffect && shouldTrack);
 
 type EffectRunner = {
     (): void;
